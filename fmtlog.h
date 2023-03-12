@@ -24,6 +24,7 @@ SOFTWARE.
 #pragma once
 //#define FMT_HEADER_ONLY
 #include "fmt/format.h"
+#include "fmt/printf.h"
 #include <type_traits>
 #include <vector>
 #include <chrono>
@@ -714,6 +715,14 @@ public:
       q_full_cb = false;
     } while (FMTLOG_BLOCK);
   }
+
+  template<typename... Args>
+  inline void logOncePrintf(const char* location, LogLevel level, fmt::format_string<Args...> format,
+                            Args&&... args) {
+    fmt::string_view sv(format);
+    std::string s_msg = fmt::sprintf(sv, args...);
+    logOnce(location, level, "{}", s_msg);
+  }
 };
 
 using fmtlog = fmtlogT<>;
@@ -775,6 +784,12 @@ inline bool fmtlogT<_>::checkLogLevel(LogLevel logLevel) noexcept {
   do {                                                                                             \
     if (!fmtlog::checkLogLevel(level)) break;                                                      \
     fmtlogWrapper<>::impl.logOnce(__FMTLOG_LOCATION, level, format, ##__VA_ARGS__);                \
+  } while (0)
+
+#define FMTLOG_ONCE_PRINTF(level, format, ...)                                                     \
+  do {                                                                                             \
+    if (!fmtlog::checkLogLevel(level)) break;                                                      \
+    fmtlogWrapper<>::impl.logOncePrintf(__FMTLOG_LOCATION, level, format, ##__VA_ARGS__);          \
   } while (0)
 
 #if FMTLOG_ACTIVE_LEVEL <= FMTLOG_LEVEL_DBG
